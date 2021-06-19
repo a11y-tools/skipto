@@ -51,7 +51,7 @@ The shortcut key provides a means to open the SkipTo menu anytime and any where 
 * Windows/Linux -- Alt+0 (Chrome, Firefox, Edge)
 * macOS -- Option+0 (Safari, Chrome, Firefox).
 
-NOTE: In version 4.1.2 was updated to change the shortcut key to use scripting rather than HTML <code>accesskey</code> attribute, this improves consistency of the shortcut key between browsers.
+NOTE: Version 4.1.2 changed the shortcut key to use scripting rather than HTML <code>accesskey</code> attribute, the change improves consistency of the shortcut key between browsers.
 
 NOTE: Browsers on iOS and iPadOS devices do not support the shortcut key at this time.
 
