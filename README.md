@@ -412,6 +412,9 @@ Happy skipping!
 
 ## Version History
 
+### Version 4.1.2
+* Updated shortcut key to use scripting rather than <code>accesskey</code>, this improves consistency of the shortcut key between browsers.
+
 ### Version 4.1.1
 * Removed <code>aria-describedby</code> from button, since screen readers read the <code>accesskey</code> information.
 

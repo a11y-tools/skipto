@@ -22,6 +22,8 @@
     firstChars: [],
     headingLevels: [],
     skipToIdIndex: 1,
+    usesAltKey: false,
+    usesOptionKey: false,
     showAllLandmarksSelector: 'main, [role=main], [role=search], nav, [role=navigation], section[aria-label], section[aria-labelledby], section[title], [role=region][aria-label], [role=region][aria-labelledby], [role=region][title], form[aria-label], form[aria-labelledby], aside, [role=complementary], body > header, [role=banner], body > footer, [role=contentinfo]',
     showAllHeadingsSelector: 'h1, h2, h3, h4, h5, h6',
     showTooltipFocus: false,
@@ -36,7 +38,8 @@
       enableHelp: true,
       enableTooltip: true,
       // Customization of button and menu
-      accesskey: '0', // default is the number zero
+      altAccesskey: '0', // default is the number zero
+      optionAccesskey: 'º', // default is the character associated with option+0
       attachElement: 'header',
       displayOption: 'static', // options: static (default), popup
       // container element, use containerClass for custom styling
@@ -151,6 +154,21 @@
     },
     init: function(config) {
       var node;
+
+      // Identify platform
+      var platform = navigator.platform.toLowerCase();
+      var userAgent = navigator.userAgent.toLowerCase();
+
+      var hasWin = platform.indexOf('win') >= 0;
+      var hasMac = platform.indexOf('mac') >= 0;
+      var hasLinux =
+        platform.indexOf('linux') >= 0 || platform.indexOf('bsd') >= 0;
+
+      var hasAndroid = userAgent.indexOf('android') >= 0;
+
+      this.usesAltKey = hasWin || (hasLinux && !hasAndroid);
+      this.usesOptionKey = hasMac;
+
       // Check if skipto is already loaded
 
       if (document.querySelector('style#' + this.skipToId)) {
@@ -208,7 +226,6 @@
       this.buttonNode.textContent = this.config.buttonLabel;
       this.buttonNode.setAttribute('aria-haspopup', 'true');
       this.buttonNode.setAttribute('aria-expanded', 'false');
-      this.buttonNode.setAttribute('accesskey', this.config.accesskey);
 
       this.domNode.appendChild(this.buttonNode);
 
@@ -223,6 +240,15 @@
       this.buttonNode.addEventListener('blur', this.handleButtonBlur.bind(this));
       this.buttonNode.addEventListener('pointerenter', this.handleButtonPointerenter.bind(this));
       this.buttonNode.addEventListener('pointerout', this.handleButtonPointerout.bind(this));
+
+      // Support shortcut key
+      if (this.usesAltKey || this.usesOptionKey) {
+        document.addEventListener(
+          'keydown',
+          this.handleDocumentKeydown.bind(this)
+        );
+      }
+
       this.domNode.addEventListener('focusin', this.handleFocusin.bind(this));
       this.domNode.addEventListener('focusout', this.handleFocusout.bind(this));
       window.addEventListener('pointerdown', this.handleBackgroundPointerdown.bind(this), true);
@@ -230,7 +256,7 @@
     },
     renderTooltip: function(attachNode, buttonNode) {
       var id = 'id-skip-to-tooltip';
-      var accesskey = this.getBrowserSpecificAccesskey(this.config.accesskey);
+      var accesskey = this.getBrowserSpecificAccesskey(this.config.altAccesskey);
 
       var tooltip = this.config.buttonTooltip;
       // for backward compatibility, support 'this.config.buttonTitle' if defined
@@ -307,36 +333,14 @@
     },
 
     getBrowserSpecificAccesskey: function (accesskey) {
-      var userAgent = navigator.userAgent.toLowerCase();
-      var platform =  navigator.platform.toLowerCase();
 
-      var hasWin    = platform.indexOf('win') >= 0;
-      var hasMac    = platform.indexOf('mac') >= 0;
-      var hasLinux  = platform.indexOf('linux') >= 0 || platform.indexOf('bsd') >= 0;
-
-      var hasAndroid = userAgent.indexOf('android') >= 0;
-      var hasFirefox = userAgent.indexOf('firefox') >= 0;
-      var hasChrome = userAgent.indexOf('chrome') >= 0;
-      var hasOpera = userAgent.indexOf('opr') >= 0;
-
-      if (typeof accesskey !== 'string' || accesskey.length === 0) {
-        return '';
+      if (this.usesAltKey) {
+        return 'Alt+' + accesskey;
       }
 
-      if (hasWin || (hasLinux && !hasAndroid)) {
-        if (hasFirefox) {
-          return "Shift + Alt + " + accesskey;
-        } else {
-          if (hasChrome || hasOpera) {
-            return "Alt + " + accesskey;
-          }
-        }
+      if (this.usesOptionKey) {
+        return 'Option+' + accesskey;
       }
-
-      if (hasMac) {
-        return "Ctrl + Option + " + accesskey;
-      }
-
       return '';
     },
     setUpConfig: function(appConfig) {
@@ -1009,6 +1013,37 @@
       this.showTooltipHover = false;
       if(this.config.enableTooltip) {
         this.tooltipNode.classList.remove('skip-to-show-tooltip');
+      }
+    },
+    handleDocumentKeydown: function (event) {
+      var key = event.key,
+        flag = false;
+
+      var altPressed =
+        this.usesAltKey &&
+        event.altKey &&
+        !event.ctrlKey &&
+        !event.shiftKey &&
+        !event.metaKey;
+
+      var optionPressed =
+        this.usesOptionKey &&
+        event.altKey &&
+        !event.ctrlKey &&
+        !event.shiftKey &&
+        !event.metaKey;
+
+      if (
+        (optionPressed && this.config.optionAccesskey === key) ||
+        (altPressed && this.config.altAccesskey === key)
+      ) {
+        this.openPopup();
+        this.setFocusToFirstMenuitem();
+        flag = true;
+      }
+      if (flag) {
+        event.stopPropagation();
+        event.preventDefault();
       }
     },
     skipToElement: function(menuitem) {
